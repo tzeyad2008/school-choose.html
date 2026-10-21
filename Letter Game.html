@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تحدّي الحروف العربية</title>
+<style>
+    /* =========================================
+       1. المتغيرات والإعدادات العامة
+       ========================================= */
+    :root {
+        --bg-color: #eef4ff;
+        --text-main: #0d2350;
+        --card-bg-closed: #1248b8;
+        --card-bg-closed-hover: #1b5fd9;
+        --card-bg-open: #ffffff;
+        --card-border: #c5d5ef;
+        --primary: #16a34a;
+        --primary-hover: #15803d;
+        --secondary: #f59e0b;
+        --secondary-hover: #d97706;
+        --danger: #dc2626;
+        --danger-hover: #b91c1c;
+        --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        
+        --card-radius: 12px;
+        --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+        --shadow-md: 0 4px 8px rgba(0,0,0,0.15);
+        --shadow-lg: 0 10px 20px rgba(0,0,0,0.2);
+        --transition-speed: 0.3s;
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: var(--font-family);
+    }
+
+    body {
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+        overflow-x: hidden;
+    }
+
+    /* =========================================
+       2. الشاشة الرئيسية والتحكم
+       ========================================= */
+    header {
+        text-align: center;
+        margin-bottom: 20px;
+        width: 100%;
+        max-width: 900px;
+    }
+
+    h1 {
+        font-size: 2.2rem;
+        color: #0b2b6b;
+        margin-bottom: 10px;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .welcome-text {
+        font-size: 1.2rem;
+        color: #4a6ba8;
+        margin-bottom: 15px;
+        font-weight: bold;
+    }
+
+    .controls {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    button {
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.1s, background-color var(--transition-speed);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: white;
+    }
+
+    button:active {
+        transform: scale(0.95);
+    }
+
+    button:focus-visible {
+        outline: 3px solid #ffb020;
+        outline-offset: 3px;
+    }
+
+    .btn-start { background-color: var(--primary); }
+    .btn-start:hover { background-color: var(--primary-hover); }
+    
+    .btn-level { background-color: var(--secondary); }
+    .btn-level:hover { background-color: var(--secondary-hover); }
+    
+    .btn-sound { background-color: #5b3bb5; }
+    .btn-sound:hover { background-color: #4a2f96; }
+    
+    .btn-restart { background-color: var(--danger); }
+    .btn-restart:hover { background-color: var(--danger-hover); }
+
+    /* =========================================
+       3. شريط الإحصائيات
+       ========================================= */
+    .stats-container {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        max-width: 900px;
+        background: white;
+        padding: 15px 25px;
+        border-radius: var(--card-radius);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .stat-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 100px;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 5px;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #0b2b6b;
+    }
+
+    .progress-container {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-width: 200px;
+    }
+
+    .progress-bar-bg {
+        width: 100%;
+        height: 15px;
+        background-color: #e2e8f0;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-top: 5px;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        background-color: var(--primary);
+        width: 0%;
+        transition: width 0.4s ease;
+    }
+
+    /* =========================================
+       4. شبكة اللعب والبطاقات
+       ========================================= */
+    .game-board {
+        display: grid;
+        gap: 12px;
+        width: 100%;
+        max-width: 900px;
+        perspective: 1000px;
+        justify-content: center;
+    }
+
+    /* مستويات الصعوبة - التحكم في عدد الأعمدة */
+    .board-easy { grid-template-columns: repeat(4, 1fr); }
+    .board-medium { grid-template-columns: repeat(4, 1fr); }
+    .board-hard { grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); }
+
+    .card {
+        aspect-ratio: 1 / 1;
+        position: relative;
+        cursor: pointer;
+        transform-style: preserve-3d;
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: var(--card-radius);
+        box-shadow: var(--shadow-sm);
+        outline: none;
+    }
+
+    .card:focus-visible {
+        outline: 4px solid #ffb020;
+        outline-offset: 2px;
+        z-index: 10;
+    }
+
+    .card.is-flipped {
+        transform: rotateY(180deg);
+        cursor: default;
+    }
+
+    .card.is-matched {
+        transform: rotateY(180deg);
+        pointer-events: none;
+        animation: bounce 0.5s ease;
+    }
+
+    .card-face {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+        border-radius: var(--card-radius);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        user-select: none;
+    }
+
+    .card-face-front {
+        background-color: var(--card-bg-closed);
+        color: white;
+        font-size: 2rem;
+        border: 3px solid #ffffff;
+        transition: background-color 0.2s;
+    }
+    
+    .card:not(.is-flipped):hover .card-face-front {
+        background-color: var(--card-bg-closed-hover);
+    }
+
+    .card-face-back {
+        background-color: var(--card-bg-open);
+        color: #0b2b6b;
+        transform: rotateY(180deg);
+        border: 3px solid #1248b8;
+        font-size: 2.5rem;
+    }
+
+    .card.is-matched .card-face-back {
+        background-color: #dcfce7;
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    /* تأثيرات الحركة */
+    @keyframes bounce {
+        0%, 100% { transform: rotateY(180deg) scale(1); }
+        50% { transform: rotateY(180deg) scale(1.1); }
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: rotateY(180deg) translateX(0); }
+        25% { transform: rotateY(180deg) translateX(-5px); }
+        75% { transform: rotateY(180deg) translateX(5px); }
+    }
+
+    .card.is-wrong {
+        animation: shake 0.4s ease;
+    }
+
+    /* =========================================
+       5. شاشات التنبيه والتعزيز الإيجابي
+       ========================================= */
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 3000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+    }
+
+    .toast {
+        background: white;
+        padding: 15px 30px;
+        border-radius: 50px;
+        box-shadow: var(--shadow-lg);
+        font-size: 1.2rem;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        animation: slideDown 0.3s ease forwards;
+    }
+
+    .toast.success { color: var(--primary); border: 2px solid var(--primary); }
+    .toast.error { color: #5b3bb5; border: 2px solid #5b3bb5; } /* لون بنفسجي هادي للخطأ */
+
+    @keyframes slideDown {
+        from { transform: translateY(-50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* =========================================
+       الشخصية الكرتونية (Mascot)
+       ========================================= */
+    .mascot-wrapper {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 110px;
+        height: 110px;
+        z-index: 100;
+        transition: all 0.3s ease;
+        filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2));
+    }
+
+    .mascot-svg {
+        width: 100%;
+        height: 100%;
+        animation: floatMascot 3s ease-in-out infinite;
+    }
+
+    .mascot-wrapper.happy { animation: jumpMascot 0.6s ease; }
+    .mascot-wrapper.sad { animation: shakeMascot 0.5s ease; }
+
+    @keyframes floatMascot {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    @keyframes jumpMascot {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-30px) scale(1.1) rotate(10deg); }
+    }
+
+    @keyframes shakeMascot {
+        0%, 100% { transform: translateX(0) rotate(0); }
+        25% { transform: translateX(-10px) rotate(-5deg); }
+        75% { transform: translateX(10px) rotate(5deg); }
+    }
+
+    /* شاشة الفوز */
+    .win-screen {
+        position: fixed;
+        inset: 0;
+        background: rgba(10, 30, 70, 0.85);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+        backdrop-filter: blur(5px);
+    }
+
+    .win-screen.show {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .win-content {
+        background: white;
+        padding: 40px;
+        border-radius: 20px;
+        text-align: center;
+        max-width: 90%;
+        width: 400px;
+        animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popIn {
+        from { transform: scale(0.5); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+
+    .win-emoji { font-size: 5rem; margin-bottom: 20px; }
+    .win-title { font-size: 1.8rem; color: var(--primary); margin-bottom: 10px; }
+    .win-stats { font-size: 1.2rem; color: #4a6ba8; margin-bottom: 25px; }
+    .win-stats strong { color: #0b2b6b; font-size: 1.4rem; }
+
+    /* تأثير النجوم المتساقطة */
+    .confetti {
+        position: absolute;
+        font-size: 1.5rem;
+        pointer-events: none;
+        animation: fall linear forwards;
+        z-index: 100;
+    }
+
+    @keyframes fall {
+        to { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+
+    /* =========================================
+       6. التجاوب مع الشاشات الصغيرة
+       ========================================= */
+    @media (max-width: 600px) {
+        h1 { font-size: 1.6rem; }
+        .welcome-text { font-size: 1rem; }
+        .board-hard { grid-template-columns: repeat(4, 1fr); }
+        .card-face-back { font-size: 1.8rem; }
+        .card-face-front { font-size: 1.5rem; }
+        .stats-container { padding: 10px; }
+        .stat-value { font-size: 1.2rem; }
+        .mascot-wrapper { width: 80px; height: 80px; bottom: 15px; right: 15px; }
+    }
+
+    /* دعم تقليل الحركة */
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+</style>
+</head>
+<body>
+
+    <!-- شريط التنبيهات -->
+    <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+    <!-- الشخصية الكرتونية -->
+    <div class="mascot-wrapper" id="mascot">
+        <svg class="mascot-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- جسم البومة -->
+            <circle cx="50" cy="50" r="45" fill="#fbbf24" stroke="#d97706" stroke-width="4"/>
+            <!-- بطن -->
+            <ellipse cx="50" cy="65" rx="25" ry="20" fill="#fef3c7"/>
+            
+            <!-- العيون (عادية) -->
+            <g id="mascotEyesNormal">
+                <circle cx="30" cy="40" r="15" fill="white" stroke="#d97706" stroke-width="3"/>
+                <circle cx="70" cy="40" r="15" fill="white" stroke="#d97706" stroke-width="3"/>
+                <circle cx="30" cy="40" r="6" fill="#1e293b"/>
+                <circle cx="70" cy="40" r="6" fill="#1e293b"/>
+                <circle cx="28" cy="38" r="2" fill="white"/>
+                <circle cx="68" cy="38" r="2" fill="white"/>
+                <path d="M50 50 L40 65 L60 65 Z" fill="#ea580c" stroke="#d97706" stroke-width="2" stroke-linejoin="round"/>
+            </g>
+            
+            <!-- العيون (سعيدة) -->
+            <g id="mascotEyesHappy" style="display:none;">
+                <circle cx="30" cy="40" r="15" fill="white" stroke="#d97706" stroke-width="3"/>
+                <circle cx="70" cy="40" r="15" fill="white" stroke="#d97706" stroke-width="3"/>
+                <!-- عيون مقفولة (مبتسمة) -->
+                <path d="M22 40 Q30 30 38 40" fill="none" stroke="#1e293b" stroke-width="4" stroke-linecap="round"/>
+                <path d="M62 40 Q70 30 78 40" fill="none" stroke="#1e293b" stroke-width="4" stroke-linecap="round"/>
+                <!-- ابتسامة -->
+                <path d="M40 60 Q50 75 60 60" fill="none" stroke="#ea580c" stroke-width="4" stroke-linecap="round"/>
+            </g>
+
+            <!-- أجنحة -->
+            <path d="M10 60 Q5 80 20 85" fill="#f59e0b" stroke="#d97706" stroke-width="3" stroke-linecap="round"/>
+            <path d="M90 60 Q95 80 80 85" fill="#f59e0b" stroke="#d97706" stroke-width="3" stroke-linecap="round"/>
+            <!-- أرجل -->
+            <path d="M40 90 L30 100 M60 90 L70 100" stroke="#d97706" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+    </div>
+
+    <!-- شاشة الفوز -->
+    <div class="win-screen" id="winScreen">
+        <div class="win-content">
+            <div class="win-emoji" id="winEmoji">🏆</div>
+            <h2 class="win-title">أحسنت يا بطل!</h2>
+            <p class="win-stats" id="winStats">لقد أكملت جميع الحروف العربية!</p>
+            <button class="btn-start" style="margin: 0 auto; font-size: 1.2rem;" onclick="startGame()">العب مرة أخرى</button>
+        </div>
+    </div>
+
+    <header>
+        <h1>تحدّي الحروف العربية</h1>
+        <p class="welcome-text">أهلًا بك يا بطل! هيا نكتشف الحروف معًا 🌟</p>
+        
+        <div class="controls">
+            <button class="btn-level" id="levelBtn" onclick="toggleLevel()">
+                المستوى: <span id="levelText">سهل</span> 🔄
+            </button>
+            <button class="btn-sound" id="soundBtn" onclick="toggleSound()">
+                الصوت: <span id="soundText">مفعل</span> 🔊
+            </button>
+            <button class="btn-restart" onclick="startGame()">
+                ابدأ من جديد 🔁
+            </button>
+        </div>
+    </header>
+
+    <div class="stats-container">
+        <div class="stat-box">
+            <span class="stat-label">المطابقات</span>
+            <span class="stat-value" id="matchesCount">0</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">المحاولات</span>
+            <span class="stat-value" id="attemptsCount">0</span>
+        </div>
+        <div class="progress-container">
+            <div style="display: flex; justify-content: space-between;">
+                <span class="stat-label">التقدم</span>
+                <span class="stat-label" id="progressText">0 / 0</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="progressBar"></div>
+            </div>
+        </div>
+    </div>
+
+    <main class="game-board" id="gameBoard" aria-label="شبكة بطاقات الحروف">
+        <!-- سيتم توليد البطاقات هنا بواسطة JavaScript -->
+    </main>
+
+<script>
+/* =========================================
+   منطق اللعبة (JavaScript)
+   ========================================= */
+
+// 1. المتغيرات الأساسية
+const allLetters = ['ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي'];
+
+let currentLevel = 'easy'; // easy, medium, hard
+let soundEnabled = true;
+let audioCtx = null;
+
+let cards = [];
+let flippedCards = [];
+let matchedPairs = 0;
+let attempts = 0;
+let totalPairs = 0;
+let lockBoard = false;
+
+// عناصر DOM
+const board = document.getElementById('gameBoard');
+const matchesCountEl = document.getElementById('matchesCount');
+const attemptsCountEl = document.getElementById('attemptsCount');
+const progressText = document.getElementById('progressText');
+const progressBar = document.getElementById('progressBar');
+const winScreen = document.getElementById('winScreen');
+const toastContainer = document.getElementById('toastContainer');
+const mascot = document.getElementById('mascot');
+const mascotEyesNormal = document.getElementById('mascotEyesNormal');
+const mascotEyesHappy = document.getElementById('mascotEyesHappy');
+
+// رسائل التشجيع
+const successMessages = [
+    "برافو عليك يا بطل! 🌟",
+    "أحسنت! إجابة صحيحة! 🎉",
+    "ممتاز! أنت رائع! 👏",
+    "رائع جدًا! لقد وجدت الحرفين! 🥳"
+];
+
+/* =========================================
+   نظام الأصوات (Web Audio API)
+   ========================================= */
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
+
+function playTone(frequency, type, duration, vol=0.1) {
+    if (!soundEnabled) return;
+    initAudio();
+    
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+    
+    gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + duration);
+}
+
+// دالة توليد صوت التصفيق
+function playClapSound() {
+    if (!soundEnabled) return;
+    initAudio();
+    
+    const bufferSize = audioCtx.sampleRate * 0.4;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    
+    for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+    }
+    
+    const noiseNode = audioCtx.createBufferSource();
+    noiseNode.buffer = buffer;
+    
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1500;
+    filter.Q.value = 1;
+    
+    const gainNode = audioCtx.createGain();
+    const now = audioCtx.currentTime;
+    
+    // محاكاة تصفيق متقطع
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(1, now + 0.02);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    
+    gainNode.gain.setValueAtTime(0, now + 0.15);
+    gainNode.gain.linearRampToValueAtTime(0.8, now + 0.17);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+    
+    gainNode.gain.setValueAtTime(0, now + 0.3);
+    gainNode.gain.linearRampToValueAtTime(0.6, now + 0.32);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+
+    noiseNode.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    noiseNode.start();
+}
+
+function playSound(type) {
+    if (!soundEnabled) return;
+    try {
+        if (type === 'success') {
+            playClapSound(); // تشغيل صوت التصفيق
+            setTimeout(() => playTone(659.25, 'sine', 0.1, 0.05), 100); 
+            setTimeout(() => playTone(783.99, 'sine', 0.2, 0.05), 200);
+        } else if (type === 'error') {
+            // نغمة هادئة جداً
+            playTone(250, 'sine', 0.3, 0.05);
+        } else if (type === 'win') {
+            const notes = [523.25, 659.25, 783.99, 1046.50];
+            notes.forEach((freq, i) => {
+                setTimeout(() => playTone(freq, 'square', 0.3, 0.05), i * 150);
+            });
+        } else if (type === 'click') {
+            playTone(600, 'sine', 0.05, 0.02);
+        }
+    } catch (e) {
+        console.log("Audio error:", e);
+    }
+}
+
+/* =========================================
+   التحكم في الواجهة والإعدادات
+   ========================================= */
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    document.getElementById('soundText').innerText = soundEnabled ? 'مفعل' : 'مغلق';
+    document.getElementById('soundBtn').style.opacity = soundEnabled ? '1' : '0.6';
+    if (soundEnabled) playSound('click');
+}
+
+function toggleLevel() {
+    if (currentLevel === 'easy') {
+        currentLevel = 'medium';
+        document.getElementById('levelText').innerText = 'متوسط';
+    } else if (currentLevel === 'medium') {
+        currentLevel = 'hard';
+        document.getElementById('levelText').innerText = 'متقدم';
+    } else {
+        currentLevel = 'easy';
+        document.getElementById('levelText').innerText = 'سهل';
+    }
+    startGame(); 
+}
+
+/* =========================================
+   منطق اللعبة
+   ========================================= */
+
+function shuffle(array) {
+    let currentIndex = array.length, randomIndex;
+    while (currentIndex !== 0) {
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+        [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+    }
+    return array;
+}
+
+function createCards() {
+    let selectedLetters = [];
+    
+    if (currentLevel === 'easy') {
+        selectedLetters = shuffle([...allLetters]).slice(0, 4);
+    } else if (currentLevel === 'medium') {
+        selectedLetters = shuffle([...allLetters]).slice(0, 10);
+    } else {
+        selectedLetters = [...allLetters];
+    }
+
+    let deck = [];
+    selectedLetters.forEach(letter => {
+        deck.push({ letter: letter, id: Math.random().toString(36).substr(2, 9), isFlipped: false, isMatched: false });
+        deck.push({ letter: letter, id: Math.random().toString(36).substr(2, 9), isFlipped: false, isMatched: false });
+    });
+
+    totalPairs = selectedLetters.length;
+    return shuffle(deck);
+}
+
+function startGame() {
+    winScreen.classList.remove('show');
+    
+    flippedCards = [];
+    matchedPairs = 0;
+    attempts = 0;
+    lockBoard = false;
+    
+    // إعادة البومة لشكلها الطبيعي
+    mascotEyesNormal.style.display = 'block';
+    mascotEyesHappy.style.display = 'none';
+    mascot.classList.remove('happy', 'sad');
+    
+    updateStats();
+    cards = createCards();
+    
+    board.className = `game-board board-${currentLevel}`;
+    board.innerHTML = '';
+
+    cards.forEach((card, index) => {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'card';
+        cardEl.dataset.index = index;
+        cardEl.dataset.id = card.id;
+        cardEl.setAttribute('tabindex', '0');
+        cardEl.setAttribute('role', 'button');
+        cardEl.setAttribute('aria-label', 'بطاقة مغلقة، اضغط لقلبها');
+        
+        cardEl.innerHTML = `
+            <div class="card-face card-face-front">؟</div>
+            <div class="card-face card-face-back">${card.letter}</div>
+        `;
+        
+        cardEl.addEventListener('click', () => flipCard(cardEl));
+        cardEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                flipCard(cardEl);
+            }
+        });
+        
+        board.appendChild(cardEl);
+    });
+    
+    playSound('click');
+}
+
+function flipCard(cardEl) {
+    if (lockBoard) return;
+    
+    const index = cardEl.dataset.index;
+    const cardData = cards[index];
+    
+    if (cardData.isFlipped || cardData.isMatched) return;
+    
+    cardData.isFlipped = true;
+    cardEl.classList.add('is-flipped');
+    cardEl.setAttribute('aria-label', `البطاقة مفتوحة، الحرف هو ${cardData.letter}`);
+    playSound('click');
+    
+    flippedCards.push({ element: cardEl, data: cardData });
+    
+    if (flippedCards.length === 2) {
+        attempts++;
+        updateStats();
+        checkMatch();
+    }
+}
+
+function checkMatch() {
+    lockBoard = true;
+    const card1 = flippedCards[0];
+    const card2 = flippedCards[1];
+    
+    if (card1.data.letter === card2.data.letter) {
+        setTimeout(() => handleCorrectMatch(card1, card2), 400);
+    } else {
+        setTimeout(() => handleWrongMatch(card1, card2), 800);
+    }
+}
+
+function handleCorrectMatch(card1, card2) {
+    card1.data.isMatched = true;
+    card2.data.isMatched = true;
+    
+    card1.element.classList.add('is-matched');
+    card2.element.classList.add('is-matched');
+    card1.element.setAttribute('aria-label', `بطاقة متطابقة، الحرف ${card1.data.letter}`);
+    card2.element.setAttribute('aria-label', `بطاقة متطابقة، الحرف ${card2.data.letter}`);
+    
+    matchedPairs++;
+    updateStats();
+    
+    // 1. تشغيل التصفيق
+    playSound('success');
+    
+    // 2. إظهار رسالة النجاح
+    showToast('success', successMessages[Math.floor(Math.random() * successMessages.length)]);
+    
+    // 3. تفاعل البومة (تفرح وتضحك)
+    mascotEyesNormal.style.display = 'none';
+    mascotEyesHappy.style.display = 'block';
+    mascot.classList.add('happy');
+    
+    setTimeout(() => {
+        mascotEyesNormal.style.display = 'block';
+        mascotEyesHappy.style.display = 'none';
+        mascot.classList.remove('happy');
+    }, 1500);
+
+    createConfetti(5);
+    
+    flippedCards = [];
+    lockBoard = false;
+    
+    if (matchedPairs === totalPairs) {
+        setTimeout(finishGame, 1000);
+    }
+}
+
+function handleWrongMatch(card1, card2) {
+    card1.element.classList.add('is-wrong');
+    card2.element.classList.add('is-wrong');
+    
+    // 1. نغمة هادئة جداً
+    playSound('error');
+    
+    // 2. رسالة التشجيع المطلوبة
+    showToast('error', 'حاول تاني، أنت تقدر! 💪');
+    
+    // 3. اهتزاز بسيط للبومة (بدون حزن)
+    mascot.classList.add('sad');
+    
+    setTimeout(() => {
+        card1.data.isFlipped = false;
+        card2.data.isFlipped = false;
+        
+        card1.element.classList.remove('is-flipped', 'is-wrong');
+        card2.element.classList.remove('is-flipped', 'is-wrong');
+        
+        card1.element.setAttribute('aria-label', 'بطاقة مغلقة، اضغط لقلبها');
+        card2.element.setAttribute('aria-label', 'بطاقة مغلقة، اضغط لقلبها');
+        
+        mascot.classList.remove('sad');
+        
+        flippedCards = [];
+        lockBoard = false;
+    }, 1200);
+}
+
+function updateStats() {
+    matchesCountEl.innerText = matchedPairs;
+    attemptsCountEl.innerText = attempts;
+    
+    progressText.innerText = `${matchedPairs} / ${totalPairs}`;
+    const percent = totalPairs === 0 ? 0 : (matchedPairs / totalPairs) * 100;
+    progressBar.style.width = `${percent}%`;
+}
+
+function finishGame() {
+    playSound('win');
+    document.getElementById('winStats').innerHTML = `
+        لقد أكملت جميع الحروف العربية!<br><br>
+        المطابقات: <strong>${matchedPairs}</strong><br>
+        المحاولات: <strong>${attempts}</strong>
+    `;
+    winScreen.classList.add('show');
+    createConfetti(50);
+}
+
+/* =========================================
+   التنبيهات والتأثيرات البصرية
+   ========================================= */
+function showToast(type, message) {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    let emoji = 'ℹ️';
+    if (type === 'success') emoji = '🌟';
+    if (type === 'error') emoji = '💪';
+    
+    toast.innerHTML = `<span>${emoji}</span> <span>${message}</span>`;
+    toastContainer.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideDown 0.3s ease reverse forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 2500);
+}
+
+function createConfetti(count) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    
+    const emojis = ['⭐', '🎉', '✨', '💫', '🏅'];
+    
+    for (let i = 0; i < count; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+        
+        confetti.style.left = Math.random() * 100 + 'vw';
+        confetti.style.top = '-50px';
+        
+        const duration = Math.random() * 2 + 1.5;
+        confetti.style.animationDuration = duration + 's';
+        confetti.style.fontSize = (Math.random() * 1 + 1) + 'rem';
+        
+        document.body.appendChild(confetti);
+        
+        setTimeout(() => confetti.remove(), duration * 1000);
+    }
+}
+
+/* =========================================
+   بدء اللعبة عند فتح الصفحة
+   ========================================= */
+window.onload = () => {
+    startGame();
+};
+</script>
+</body>
+</html>
